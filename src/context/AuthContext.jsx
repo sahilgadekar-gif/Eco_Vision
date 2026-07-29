@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authAPI }  from '../services/api';
+import { authAPI, userAPI }  from '../services/api';
 import {
   getCurrentUser,
   setCurrentUser,
@@ -37,7 +37,6 @@ export const AuthProvider = ({ children }) => {
           }
         })
         .catch(() => {
-          // Backend offline or error — use cached user session
           if (cached) {
             setUser(cached);
           } else {
@@ -79,12 +78,10 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, error: data.message || 'Registration failed.' };
     } catch (err) {
-      // If server returned explicit validation/error message
       if (err.response?.data?.message) {
         return { success: false, error: err.response.data.message };
       }
 
-      // Offline / Local fallback registration
       const existing = getUserByEmail(cleanedEmail);
       if (existing) return { success: false, error: 'Email already registered.' };
 
@@ -118,12 +115,10 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, error: data.message || 'Login failed.' };
     } catch (err) {
-      // If server returned structured error (e.g., "Incorrect password.")
       if (err.response?.data?.message) {
         return { success: false, error: err.response.data.message };
       }
 
-      // Offline / Local fallback login
       const found = getUserByEmail(cleanedEmail);
       if (!found) return { success: false, error: 'No account found with this email.' };
       if (found.password !== password) return { success: false, error: 'Incorrect password.' };
@@ -143,7 +138,6 @@ export const AuthProvider = ({ children }) => {
   // ── Update profile ────────────────────────────────────────────────────────
   const updateProfile = useCallback(async ({ name, bio }) => {
     try {
-      const { userAPI } = await import('../services/api');
       const { data } = await userAPI.updateProfile({ name, bio });
       if (data.success) {
         const updated = { ...user, ...data.user };
@@ -163,7 +157,6 @@ export const AuthProvider = ({ children }) => {
   // ── Change password ───────────────────────────────────────────────────────
   const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
     try {
-      const { userAPI } = await import('../services/api');
       const { data } = await userAPI.changePassword({ currentPassword, newPassword });
       return { success: data.success, error: data.message };
     } catch {
@@ -180,7 +173,6 @@ export const AuthProvider = ({ children }) => {
   // ── Delete account ────────────────────────────────────────────────────────
   const deleteAccount = useCallback(async () => {
     try {
-      const { userAPI } = await import('../services/api');
       await userAPI.deleteAccount();
     } catch {
       /* ignore server error */
