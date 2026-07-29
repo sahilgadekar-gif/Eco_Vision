@@ -14,9 +14,9 @@ const app = express();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
-// CORS — allow only the configured frontend origin
+// CORS — allow frontend origin and Vercel domains
 app.use(cors({
-  origin:      process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin:      true, // allow all origins dynamically on Vercel / dev
   credentials: true,
   methods:     ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -45,7 +45,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
-    message: '🌿 EcoVision API is running.',
+    message: '🌿 EcoVision API is running on Vercel.',
     timestamp: new Date().toISOString(),
   });
 });
@@ -83,10 +83,14 @@ app.use((err, req, res, next) => {  // eslint-disable-line no-unused-vars
   });
 });
 
-// ── Start server ──────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n🌿 EcoVision API server running:`);
-  console.log(`   ➜ http://localhost:${PORT}`);
-  console.log(`   ➜ Health: http://localhost:${PORT}/api/health\n`);
-});
+// ── Start server (when run directly) ──────────────────────────────────────────
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`\n🌿 EcoVision API server running:`);
+    console.log(`   ➜ http://localhost:${PORT}`);
+    console.log(`   ➜ Health: http://localhost:${PORT}/api/health\n`);
+  });
+}
+
+module.exports = app;
